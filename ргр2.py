@@ -1,80 +1,101 @@
 import numpy as np
-import pandas as pd
-
-# Функции:
-'''
-a, b - пределы интегрирования
-h - шаг
-n - количество шагов разбиения
-'''
-# Прямоугольники:
-def pryamougulniki(f, a, b, h):
-    n = int((b - a) / h)
-    x_mid = np.linspace(a + h/2, b - h/2, n)
-    return h * np.sum(f(x_mid))
+import math
+def f(x):
+    return math.sqrt(x) #вводим функция
+a, b = 0, 1 #вводим пределы интегрирования
+n = 5 #кол-во разбиений(данная программа позволяет вычислить с n=2,...,5
+exact=2/3 #истинное значение интеграла
+cheb_uzli = {
+    2: [-0.5773502692, 0.5773502692],
+    3: [-0.7071067812, 0.0, 0.7071067812],
+    4: [-0.7946544723, -0.1875924741, 0.1875924741, 0.7946544723],
+    5: [-0.8324974870, -0.3745414096, 0.0, 0.3745414096, 0.8324974870],
     
-# Трапеции:
-def trapezoidal(f, a, b, h):
-    n = int((b - a) /h)
-    x = np.linspace(a, b, n + 1)      
-    y = f(x)
-    return h * (0.5 * y[0] + np.sum(y[1:-1]) + 0.5 * y[-1])
-    
-# Симпсон:
-def simpson(f, a, b, h):
-    n = int((b - a) /h)
-    if n % 2 != 0:
-        n += 1
-    h = (b - a) / n
-    x = np.linspace(a, b, n + 1)
-    y = f(x)
-    return (h/3) * (y[0] + y[-1] + 4 * np.sum(y[1:-1:2]) + 2 * np.sum(y[2:-1:2]))
-# Метод 3/8:
-def tri_vosmih(f, a, b, h):
-    n = int((b - a) /h)
-    while n % 3 != 0: 
-        n += 1
-    h = (b - a) / n
-    x = np.linspace(a, b, n + 1)
-    y = f(x)
-    result = 0
-    for i in range(0,n,3):
-        result+=(3*h/8)*(y[i] + 3*y[i+1] +3*y[i+2]+y[i+3])
-    return result
+ }
+def chebyshev(n, a, b):
+    uzli = cheb_uzli[n]
+    w=[(b-a)/n]*n
+    half_len = (b - a) / 2
+    mid = (a + b) / 2
+    x = [mid + half_len * t for t in uzli]
+    return sum(w[i] * f(x[i]) for i in range(n))
+gaus_uzli_weights = {
+    2: ([-0.5773502692, 0.5773502692], [1.0, 1.0]),
+    3: ([-0.7745966692, 0.0, 0.7745966692], [0.5555555556, 0.8888888889, 0.5555555556]),
+    4: ([-0.8611363116, -0.3399810436, 0.3399810436, 0.8611363116],
+        [0.3478548451, 0.6521451549, 0.6521451549, 0.3478548451]),
+    5: ([-0.9061798459, -0.5384693101, 0.0, 0.5384693101, 0.9061798459],
+        [0.2369268850, 0.4786286705, 0.5688888889, 0.4786286705, 0.2369268850]),
+}
+def gauss(n,a,b):
+    uzli, weights = gaus_uzli_weights[n]
+    half_len = (b - a) / 2
+    mid = (a + b) / 2
+    x = [mid + half_len * t for t in uzli]
+    w = [wgt * half_len for wgt in weights]
+    return sum(w[i] * f(x[i]) for i in range(n))
+rado_left_uzli_weights = {
+    # n = 1: Только фиксированная точка -1
+    1: ([-1.0], [2.0]),
+    2: ([-1.0, 0.3333333333], [0.5, 1.5]),
+    3: ([-1.0, -0.2898979486, 0.6898979486], 
+        [0.2222222222, 0.8888888889, 0.8888888889]),
+    4: ([-1.0, -0.5753189235, 0.1810662711, 0.8228240810], 
+        [0.125, 0.6576886399, 0.7763869374, 0.4409244226]),
+    5: ([-1.0, -0.7204802713, -0.1671808647, 0.4463139727, 0.8857916077], 
+        [0.0833333333, 0.4629257032, 0.7030602417, 0.6106535099, 0.1400272120]),
+}
+rado_right_uzli_weights = {
+    2: ([-0.3333333333, 1.0], [1.5, 0.5]),
+    3: ([-0.6898979486, 0.2898979486, 1.0], [0.8888888889, 0.8888888889, 0.2222222222]),
+    4: ([-0.8228240810, -0.1810662711, 0.5753189235, 1.0],
+        [0.4409244226, 0.7763869374, 0.6576886399, 0.125]),
+    5: ([-0.8857916077, -0.4463139727, 0.1671808647, 0.7204802713, 1.0],
+        [0.1400272120, 0.6106535099, 0.7030602417, 0.4629257032, 0.0833333333]),
+}
+lobatto_uzli_weights = {
+    2: ([-1.0, 1.0], [1.0, 1.0]),
+    3: ([-1.0, 0.0, 1.0], [0.3333333333, 1.3333333333, 0.3333333333]),
+    4: ([-1.0, -0.4472135955, 0.4472135955, 1.0], 
+        [0.1666666667, 0.8333333333, 0.8333333333, 0.1666666667]),
+    5: ([-1.0, -0.6546536707, 0.0, 0.6546536707, 1.0], 
+        [0.1, 0.5444444444, 0.7111111111, 0.5444444444, 0.1]),
+}
+   7, 0.4629257032, 0.0833333333]),
+def rado_left(n,a,b):
+    uzli, weights = rado_left_uzli_weights[n]
+    half_len = (b - a) / 2
+    mid = (a + b) / 2
+    x = [mid + half_len * t for t in uzli]
+    w = [wgt * half_len for wgt in weights]
+    g = sum(w[i] * f(x[i]) for i in range(n))
+    return g
+def rado_right(n,a,b):
+    uzli, weights = rado_right_uzli_weights[n]
+    half_len = (b - a) / 2
+    mid = (a + b) / 2
+    x = [mid + half_len * t for t in uzli]
+    w = [wgt * half_len for wgt in weights]
+    return sum(w[i] * f(x[i]) for i in range(n))
+def lobatto(n,a,b):
+    uzli, weights = lobatto_uzli_weights[n]
+    half_len = (b - a) / 2
+    mid = (a + b) / 2
+    x = [mid + half_len * t for t in uzli]
+    w = [wgt * half_len for wgt in weights]
+    return sum(w[i] * f(x[i]) for i in range(n))
 
-if __name__ == "__main__":
-    # Вводим тестовую функцию
-    def f(x):
-        return np.sin(x) #<-функция
-    a, b = 0, np.pi/2 #<- пределы интегрирования
-    exact_value = 1  #<- точное значения интеграла для вычисления ошибки
-    
-h_values= [np.pi/4,	np.pi/6,np.pi/16,np.pi/32,	np.pi/64,	np.pi/128] #<- задаем шаг
-methods = [
-    ('Прямоугольники', pryamougulniki),
-    ('Трапеции', trapezoidal),
-    ('Симпсон', simpson),
-    ('3/8', tri_vosmih)
-]
+results = {
+    "Гаусс": gauss(n,a,b),
+    "Чебышёв": chebyshev(n,a,b),
+    "Радо левый": rado_left(n,a,b),
+    "Радо правый": rado_right(n,a,b),
+    "Лобатто": lobatto(n,a,b),
+}
 
-results = []
-# выводит табличку со значениями
-for name, method in methods:
-    for h in h_values:
-        I = method(f, a, b, h)
-        error = abs(I - exact_value)
-        results.append({
-            'Метод': name,
-            'h': h,
-            'Приближение': I,
-            'Ошибка': error
-        })
+print(f"{'Метод':<15} {'Приближение':<15} {'Ошибка':<15}")
+print("-" * 45)
 
-df = pd.DataFrame(results)
-print(df.to_string(index=False))
-
-'''
- /\_/\  
-| o o |  \ /
-\  u  /  |_|   типа кот
-'''
+for name, approx in results.items():
+    error = abs(approx - exact)
+    print(f"{name:<15} {approx:<15.10f} {error:<15.2e}")
